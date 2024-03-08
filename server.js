@@ -34,29 +34,20 @@ app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
 
-//using ejs to handle dynamic front end without react
-//have to set it as our view engine
+//using ejs to handle dynamic front end without react, we have to set it as our view engine
 //all files that will be rendered dynamically will be in views folder 
 app.set('view engine', 'ejs');
-
-//Any requests sent to localhost:8080/ will return message: path incorrect  
-// app.use('/', (req, res) => {
-// 	res.send({message: "Incorrect path"});
-// })
 
 //Routes
 app.get('/', (req, res) => {
 	//render home page
-	//we only use index because we're rendering
-	//an ejs file 
 	res.render('index');
 })
 
 //get user data from database, async
 app.get('/user', async (req, res) => {
-	const users = await User.find({}) //MONGODB METHOD 
+	const users = await User.find({})
 	//user.ejs file can be accessed by EJS with the render method
-	//this is saying, render the user.ejs file, and take in the users object
 	res.render('user', {users});
 })
 
@@ -69,12 +60,8 @@ app.get('/log', (req,res) => {
 app.post('/user', async (req,res) => {
 	const newUser = new User(req.body);
 	try {
-		//see if we can save newUser to database 
-		await newUser.save(); //(MONGODB METHOD)
-
-		//on success, redirect to /user route
-		//not sure why
-		res.redirect('/user')
+		await newUser.save();
+    res.redirect('/user')
 	} catch(err) {
 		res.redirect('/user?error=true');
 	}
@@ -82,24 +69,11 @@ app.post('/user', async (req,res) => {
 
 //Update new user
 app.post('/user/update/:id', async (req,res) => {
-	//UNSURE why id is in params, and body is only name and description
-	//UNSURE where we defined the request format
 	const {id} = req.params;
 	const {username, password} = req.body;
-	// REQUEST BODY EXAMPLE
-	// {
-	//		username: ualskdfj,
-	//		password: alskdfjl
-	//  }
-	//destructure to look like 
-	// {username, password} = {ualskdfj, alskdfjl}
-	//conclusion: using object destructuring for object properties
-	//requires taking the keys and turning it into the variable name
-	//this isn't like setting typical variables where the name is arbitrary 
 
 	try {
-		await User.findByIdAndUpdate(id, {username, password});  //MONGO DB METHOD 
-		//i think this sends a get request to /user 
+		await User.findByIdAndUpdate(id, {username, password});
 		res.redirect('/user');
 	} catch(err) {
 		res.redirect('/user?error=true');
@@ -107,14 +81,10 @@ app.post('/user/update/:id', async (req,res) => {
 })
 
 //Delete New User
-//WE ARE MANUALLY WRITING THESE PATHS 
 app.delete('/user/delete/:id', async (req,res) => {
-	//UNSURE why id is in params, and body is only name and description
-	//UNSURE where we defined the request format
 	const {id} = req.params;
 	try {
-		await User.findByIdAndDelete(id);  //MONGO DB METHOD 
-		//not sure why we do this-> is it to send the response back? not sure
+		await User.findByIdAndDelete(id);
 		res.status(200).json({message: 'item deleted successfully'});
 	} catch(err) {
 		res.redirect('/user?error=true');
@@ -124,8 +94,7 @@ app.delete('/user/delete/:id', async (req,res) => {
 //Log Morning Walk 
  app.post('/log/morning', async (req,res) => {
  	const { logDate, startTime, duration } = req.body;
- 	//get user id from request
- 	//find document with user-id
+ 	//dummy user-id
  	const uid = 1234;
 	try {
 		await MorningLog.updateOne(
@@ -148,7 +117,6 @@ app.delete('/user/delete/:id', async (req,res) => {
 		 	{ upsert: true });
 		res.redirect('/log');
 	} catch(err) {
-		//THIS ERROR ISN'T EVEN LOGGING 
 		console.log(err);
 		res.redirect('/log?error=true');
 	}
@@ -157,8 +125,7 @@ app.delete('/user/delete/:id', async (req,res) => {
 //Log Afternoon Walk
  app.post('/log/afternoon', async (req,res) => {
  	const { logDate, startTime, duration } = req.body;
- 	//get user id from request
- 	//find document with user-id
+  //dummy user-id
  	const uid = 1234;
 	try {
 		await AfternoonLog.updateOne(
@@ -181,7 +148,6 @@ app.delete('/user/delete/:id', async (req,res) => {
 		 	{ upsert: true });
 		res.redirect('/log');
 	} catch(err) {
-		//THIS ERROR ISN'T EVEN LOGGING 
 		console.log(err);
 		res.redirect('/log?error=true');
 	}

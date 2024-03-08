@@ -1,8 +1,5 @@
-//Handle GET requests
-//we should have one function for morning, one for afternoon
-//both will execute on the HTML on load 
-//we can add modifications later 
-async function getLog (walkType) { //walkType can be either 'morning' or 'afternoon'
+//walkType can be either 'morning' or 'afternoon'
+async function getLog (walkType) {
   try {
     //1. Get current day in user's location, correctly formatted 
     const date = new Date();

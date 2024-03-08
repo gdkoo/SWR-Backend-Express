@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>User</title>
+	<link rel="stylesheet" href='/css/style.css'>
+</head>
+<body>
+	<header>
+		<%- include('./partial/header.ejs') %>
+		<h2>SWR</h2>
+	</header>
+
+	<!-- login form --> 
+	<!-- create user -->
+	<form id="createForm" action="/user" method="POST">
+		<input type="text" name="username" placeholder="username" required>
+		<input type="text" name="password" placeholder="eight character password" required>
+		<button type="submit">Create User</button>
+	</form>
+
+	<!--update user info --> 
+	<form id="updateForm" action="/user/update/" method="POST">
+		<!-- this is hidden because it selects the id of the original data to be bundled with the rest of the inputs when the form submits--> 
+		<input type="hidden" name="update-id" id="_id">
+		<input type="text" name="username" id="updateUsername"placeholder="new username">
+		<input type="text" name="password" id="updatePassword" placeholder="new password" required>
+		<button type="submit">Update User</button>
+	</form>
+
+	<!-- display user info, following tutorial only, hypothetically creating multiple users on one interface-->
+	<ul id="userInfo">
+		<!-- UNSURE what users here represents --> 
+		<% users.forEach((user) => { %>
+			<li>
+				<span><%=user.username%> : <%= user.password%></span>
+				<!-- needs name and description to edit on front-end (name tag is for form) -->
+				<!-- UNSURE where is this user data that's passed in, how can they pull the id if we didn't set one for the user other than in the form tag? -->
+				<button onClick="editItem('<%= user.id%>', '<%=user.username%>', '<%= user.password%>')"> Edit User</button>
+				<!-- only need id in order to delete from database -->
+				<button onClick="deleteItem('<%= user.id%>')">Delete User</button>
+			</li>
+		<% }); %>
+	</ul>
+
+	<!--should go on a separate page but keep here now -->
+	<!-- display user information-->
+	<script type="text/javascript" src='/js/script.js'></script>
+</body>
+</html>

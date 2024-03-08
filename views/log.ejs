@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Login</title>
+	<link rel="stylesheet" href='/css/style.css'>
+</head>
+<body>
+	<header>
+		<%-include('./partial/header.ejs')%>
+		<h2>SWR In Your Location</h2>
+	</header>
+	<section>
+		<h2>Daily Walk Tracking</h2>
+		<div id="walkLogMorning">
+	      <!-- sun emoji -->
+	      <p style="font-size:100px" id="morningWalkDone" class="hidden">&#127774;</p> 
+		</div>
+		<div id="walkLogAfternoon">
+			<!-- moon emoji -->
+			<p style="font-size:100px" id="afternoonWalkDone" class="hidden">&#127773;</p> 
+		</div>
+	</section>
+	<section>
+		<h3>Morning Walk</h3>
+		<!--1. Form to Create Walk Data-->
+		<form id="morningLogForm" action= "/log/morning" method="POST">
+			<input type="date" name="logDate" id="dateAM">
+			<input type="time" name="startTime" id="startTimeAM">
+			<input type="text" name="duration" id="durationAM" placeholder="length in minutes">
+			<button type="submit">Log Morning Walk</button>
+		</form>
+		<!--2. Form to Update Walk Data -->
+		<!--3. Timer-->
+		<%- include('./partial/timer.ejs') %>
+	</section>
+	<section>
+		<h3>Afternoon Walk</h3>
+		<!--1. Form to Create Walk Data-->
+		<form id="afternoonLogForm" action= "/log/afternoon" method="POST">
+			<input type="date" name="logDate" id="datePM">
+			<input type="time" name="startTime" id="startTimePM">
+			<input type="text" name="duration" id="durationPM" placeholder="length in minutes">
+			<button type="submit">Log Afternoon Walk</button>
+		</form>
+		<!--2. Form to Update Walk Data -->
+		<!--3. Timer-->
+	</section>
+
+	<!--should go on a separate page but keep here now -->
+	<!-- display user information-->
+	<script type="text/javascript" src='/js/script.js'></script>
+	<script type="text/javascript" src='/js/timerClass.js'></script>
+	<script type="text/javascript">
+		let timerMins  = 20;
+		document.getElementById("timerBaseMins").innerHTML = timerMins;
+	</script>
+	<script type="text/javascript"> displayUserWalk('morning');	
+		displayUserWalk('afternoon');
+	</script>
+</body>
+</html>

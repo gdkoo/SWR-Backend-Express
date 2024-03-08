@@ -1,0 +1,226 @@
+
+/* Navbar styling */
+.navbar {
+  background-color: #333;
+  overflow: hidden;
+}
+
+/* Navbar list */
+.nav-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Navbar items */
+.nav-item {
+  float: left;
+}
+
+/* Navbar links */
+.nav-link {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 20px;
+  text-decoration: none;
+}
+
+/* Change color on hover */
+.nav-link:hover {
+  background-color: #555;
+  color: white;
+}
+
+
+body {
+  font-family: Folio, sans-serif;
+  line-height: 1.6;
+  margin: 20px;
+  padding: 0;
+}
+
+header {
+  background-color: #f9f9f9;
+  text-align: center;
+  padding: 20px;
+}
+
+.sub-header {
+  font-size: 1.2em;
+}
+
+h2 {
+  background-color: #f0f0f0;
+  padding: 10px;
+}
+
+ul, ol {
+  margin-left: 20px;
+}
+
+blockquote {
+  background-color: #f0f0f0;
+  padding: 10px;
+  margin: 20px 0;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+}
+
+/*Walk Log Emojis */
+.hidden {
+  display: none;
+}
+
+/* Timer style borrwed from SWR1 */
+.timer-main {
+  z-index: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.center-align {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer__part {
+  color: #da7193;
+  font-size: 75px;
+  font-weight: 600;
+}
+
+/* purple container */
+.timer-element {
+  position: relative;
+  top: 5vh;
+  border-radius: 150px;
+  max-height: 400px;
+  height: 70vh;
+  max-width: 700px;
+  width: 80vw;
+  display: flex;
+  background-color: #aa83ac;
+  z-index: 1;
+}
+
+/*set container height and width for circle */
+.timer-base {
+  position: absolute;
+  min-height: 200px;
+  max-height: 325px;
+  height: 40vh;
+  min-width: 200px;
+  max-width:325px;
+  width: 40vw;
+  text-align: center;
+  justify-content: center;
+  margin-inline: initial;
+  z-index: 1;
+}
+
+.timer-base-circle {
+  fill:ghostwhite;
+  stroke: none;
+}
+
+.timer-base-path-elapsed {
+  stroke-width: 10px;
+  stroke: none;
+}
+
+.timer-base__label {
+  position: absolute;
+  
+  width: 50%;
+  height: 50%;
+  
+  /* Keep the label aligned to the top */
+/*  top: 0;*/
+  
+  /* Create a flexible box that centers content vertically and horizontally */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Sort of an arbitrary number; adjust to your liking */
+  font-size: var(--font-lg);
+  color: palevioletred;
+}
+
+.timer-bttn {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin: none;
+  border: none;
+  background: #2d98ea;
+  cursor: pointer;
+  color: white;
+  z-index: 3;
+}
+
+.timer-bttn-left {
+  position: absolute;
+  right: 350px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  
+}
+
+.timer-bttn-right {
+  position: absolute;
+  left: 350px;
+  top: 50%;
+  transform: translateY(-50%);
+
+}
+
+@media (max-width: 650px) {
+  .timer-bttn-left {
+    right: 200px;
+    width: 80px;
+    height: 80px;
+  }
+  .timer-bttn-right {
+    left: 200px;
+    width: 80px;
+    height: 80px;
+  }
+  .timer-element {
+    height: 35vh
+  }
+}
+
+@media (max-width: 350px) {
+  .timer-bttn-left {
+    right: 170px;
+    width: 70px;
+    height: 70px;
+  }
+  .timer-bttn-right {
+    left: 170px;
+    width: 70px;
+    height: 70px;
+  }
+  .timer-element {
+    height: 35vh;
+  }
+  .timer-base {
+    height: 25vh;
+  }
+}
+
+.timer-bttn__start{
+  background: orange;
+}
+
+.timer-bttn__stop{
+  background: violet;
+}

@@ -66,12 +66,12 @@ async function displayUserWalk (walkType) {
 }
 
 //Handle Edit requests
-function editItem (id, username, password) {
+function editItem (id, email, password) {
 	//populate hidden field with the id
 	document.getElementById('_id').value = id;
 	
 	//populate form fields
-	document.getElementById('updateUsername').value = username;
+	document.getElementById('updateEmail').value = email;
 	document.getElementById('updatePassword').value = password;
 	
 	//when form is updated, send to the following endpoint with the id variable

@@ -5,6 +5,9 @@ const mongoose = require ('mongoose');
 const User = require('./models/user.js');
 const MorningLog = require('./models/morningLog.js');
 const AfternoonLog = require('./models/afternoonLog.js');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+
 
 const app = express();
 
@@ -56,24 +59,38 @@ app.get('/log', (req,res) => {
 	res.render('log');
 })
 
-//Create new user 
+//Create/Register new user 
 app.post('/user', async (req,res) => {
-	const newUser = new User(req.body);
 	try {
+    const { email, password } = req.body;
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      res.status(400).json({ error:'Email already registered' });  
+    };
+
+    //encrypt and hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    //create new user
+    const newUser = new User({ email, password: hashedPassword });
 		await newUser.save();
-    res.redirect('/user')
+
+    res.status(201).json({ message:'User registered successfully' });
 	} catch(err) {
-		res.redirect('/user?error=true');
+      console.log(`${err}: error registering user`);
+		  res.status(500).json({ error: 'An error occurred while registering the user' });
 	}
 })
 
 //Update new user
 app.post('/user/update/:id', async (req,res) => {
-	const {id} = req.params;
-	const {username, password} = req.body;
+	const { id } = req.params;
+	const { email, password } = req.body;
 
 	try {
-		await User.findByIdAndUpdate(id, {username, password});
+		await User.findByIdAndUpdate( id, { email, password });
 		res.redirect('/user');
 	} catch(err) {
 		res.redirect('/user?error=true');
@@ -82,13 +99,45 @@ app.post('/user/update/:id', async (req,res) => {
 
 //Delete New User
 app.delete('/user/delete/:id', async (req,res) => {
-	const {id} = req.params;
+	const { id } = req.params;
 	try {
 		await User.findByIdAndDelete(id);
-		res.status(200).json({message: 'item deleted successfully'});
+		res.status(200).json({ message: 'item deleted successfully' });
 	} catch(err) {
 		res.redirect('/user?error=true');
 	}
+})
+
+//User Tries to Login -> Generate JWT Token 
+app.post('/login', async(req,res) => {
+  try {
+    //check if user exists, get user doc from mongodb 
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });    
+    }
+
+    //validate password using User model static function 
+    const verifyPassword = await User.comparePassword(password, user.password);
+    if (!verifyPassword) {
+      console.log(verifyPassword);
+      console.log(user.password);
+      return res.status(401).json({ error: `Password didn't match` });
+    }
+
+    //generate and send JWT token
+    jwt.sign({ userId: user._id }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1hr'}, (err,token) => {
+      if (err) {
+        console.log(`${err}: error generating JWT`);
+      }
+      res.status(200).send(token);
+    });
+  } catch(err) {
+    console.log(`${err}: error logging in`);
+    res.status(500).json({ error: 'An error occured while logging in' })
+  }
 })
 
 //Log Morning Walk 

@@ -17,7 +17,7 @@ const MorningLog = new mongoose.Schema({
 		type: Date,
 		required: true,
 	},
-	uid: Number, //match to user in user collection			
+	user_id: String, //match to user in user collection			
 });
 
 module.exports = mongoose.model('MorningLog', MorningLog);

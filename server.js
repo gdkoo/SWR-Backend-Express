@@ -27,7 +27,7 @@ mongoose.connect(`mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MO
 //CORS middleware (cross-origin browsers, prevents spam requests)
 app.use(cors());
 
-//serve static files
+//Serve static files
 app.use(express.static('public'));
 
 //Middleware: Helps server parse incoming requests 
@@ -40,6 +40,30 @@ app.use(express.urlencoded({extended: false}));
 //using ejs to handle dynamic front end without react, we have to set it as our view engine
 //all files that will be rendered dynamically will be in views folder 
 app.set('view engine', 'ejs');
+
+//Authentication Middleware
+const authenticateUserToken = (req,res,next) => {
+  const authHeaders = req.headers.authorization;
+  
+  if (!authHeaders) {
+    res.send(403).json({ error:'problem with authorization header' });
+    return;
+  } 
+
+  //get token
+  const token = authHeaders.split(' ')[1];
+
+  //validate token with server
+  const verifiedToken = jwt.verify(token, `${process.env.JWT_SECRET_KEY}`, (err, authorizedData) => {
+    if (err) {
+      console.log('error connecting to protected route. unauthorized access');
+      res.send(403).json({ error:'unauthorized access' });
+    } else {
+      req.authorizedData = authorizedData;
+      next();
+    }
+  });
+}
 
 //Routes
 app.get('/', (req, res) => {
@@ -66,7 +90,7 @@ app.post('/user', async (req,res) => {
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-      res.status(400).json({ error:'Email already registered' });  
+      res.status(400).json({ error:'Email already registered' });
     };
 
     //encrypt and hash password
@@ -116,19 +140,18 @@ app.post('/login', async(req,res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });    
+      res.status(401).json({ error: 'Invalid email or password' });
     }
 
     //validate password using User model static function 
     const verifyPassword = await User.comparePassword(password, user.password);
     if (!verifyPassword) {
-      console.log(verifyPassword);
-      console.log(user.password);
-      return res.status(401).json({ error: `Password didn't match` });
+      res.status(401).json({ error: `Password didn't match` });
+      return;
     }
 
     //generate and send JWT token
-    jwt.sign({ userId: user._id }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1hr'}, (err,token) => {
+    jwt.sign({ user_id: user._id }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1hr'}, (err,token) => {
       if (err) {
         console.log(`${err}: error generating JWT`);
       }
@@ -141,15 +164,15 @@ app.post('/login', async(req,res) => {
 })
 
 //Log Morning Walk 
- app.post('/log/morning', async (req,res) => {
- 	const { logDate, startTime, duration } = req.body;
- 	//dummy user-id
- 	const uid = 1234;
+app.post('/log/morning', authenticateUserToken, async (req,res) => {
+ 	console.log(req);
+  const { logDate, startTime, duration } = req.body;
+  const user_id = req.authorizedData.user_id;
 	try {
 		await MorningLog.updateOne(
 			//filter:find uid and date
 			{
-				'uid': `${uid}`,
+				'user_id': user_id,
 				'logDate': `${logDate}`,
 			},
 			//update: set new values
@@ -172,15 +195,14 @@ app.post('/login', async(req,res) => {
 })
 
 //Log Afternoon Walk
- app.post('/log/afternoon', async (req,res) => {
+app.post('/log/afternoon', authenticateUserToken, async (req,res) => {
  	const { logDate, startTime, duration } = req.body;
-  //dummy user-id
- 	const uid = 1234;
+  const user_id = req.authorizedData.user_id;
 	try {
 		await AfternoonLog.updateOne(
 			//filter:find uid and date
 			{
-				'uid': `${uid}`,
+				'user_id': user_id,
 				'logDate': `${logDate}`,
 			},
 			//update: set new values
@@ -200,34 +222,36 @@ app.post('/login', async(req,res) => {
 		console.log(err);
 		res.redirect('/log?error=true');
 	}
- })
+})
 
 //Get Morning Walk 
 //Router should return all data in that walk document
- app.get('/log/morning', async(req,res) => {
+app.get('/log/morning', authenticateUserToken, async(req,res) => {
 	 try {
+      const user_id = req.authorizedData.user_id;
 	 	 	const userMorningLog = await MorningLog.find({
-	 	 		uid: `${req.query.uid}`,
-	 	 		logDate: `${req.query.date}`
+	 	 		user_id: `${user_id}`,
+	 	 		logDate: `${req.query.logDate}`
 	 	 	});
 	 	 	res.send(userMorningLog);
 	 } catch (err) {
 	 		res.redirect('/log?error=true');
 	 }
- })
+})
 
  //Get Afternoon Walk
- app.get('/log/afternoon', async(req,res)=> {
+app.get('/log/afternoon', authenticateUserToken, async(req,res)=> {
  	try {
+      const user_id = req.authorizedData.user_id;
 	 	 	const userAfternoonLog = await AfternoonLog.find({
-	 	 		uid: `${req.query.uid}`,
-	 	 		logDate: `${req.query.date}`
+	 	 		user_id: user_id,
+	 	 		logDate: `${req.query.logDate}`
 	 	 	});
 	 	 	res.send(userAfternoonLog);
 	 } catch (err) {
 	 		res.redirect('/log?error=true');
 	 }
- })
+})
 
 //Start the server
 //App listens for requests on localhost:8080

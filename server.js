@@ -42,11 +42,23 @@ app.use(express.urlencoded({extended: false}));
 app.set('view engine', 'ejs');
 
 //Authentication Middleware
+//generate access token
+const generateAccessToken = function (user) {
+  const accessToken = jwt.sign({ user_id: user._id }, `${process.env.ACCESS_TOKEN_SECRET}`, { expiresIn: '15s' });
+  return accessToken;
+}
+
+const generateRefreshToken = function (user) {
+  const refreshToken = jwt.sign({ user_id: user._id }, `${process.env.REFRESH_TOKEN_SECRET}`);
+  return refreshToken;
+}
+
+//used for authenticating access tokens specifically
 const authenticateUserToken = (req,res,next) => {
   const authHeaders = req.headers.authorization;
   
   if (!authHeaders) {
-    res.send(403).json({ error:'problem with authorization header' });
+    res.status(401).json({ error:'problem with authorization header' });
     return;
   } 
 
@@ -54,16 +66,48 @@ const authenticateUserToken = (req,res,next) => {
   const token = authHeaders.split(' ')[1];
 
   //validate token with server
-  const verifiedToken = jwt.verify(token, `${process.env.JWT_SECRET_KEY}`, (err, authorizedData) => {
+  const verifiedToken = jwt.verify(token, `${process.env.ACCESS_TOKEN_SECRET}`, (err, authorizedData) => {
     if (err) {
       console.log('error connecting to protected route. unauthorized access');
-      res.send(403).json({ error:'unauthorized access' });
+      res.status(403).json({ error:'unauthorized access' });
     } else {
       req.authorizedData = authorizedData;
       next();
     }
   });
 }
+
+//temporarily using array to store refresh tokens
+const refreshTokens = [];
+
+//Router takes in refresh token, checks if refresh token is stored in
+//refresh token array, then validates the refresh token before generating
+//access token
+//Router takes in refresh token and returns an access token to the user
+app.post('/token', (req, res) => {
+  //take in refresh token
+  const refreshToken = req.body.token;
+  let accessToken = '';
+
+  if (!refreshToken) {
+    res.status(401).json({ error: 'No refresh token' });
+  }
+  //refresh token not in stored tokens
+  if (!refreshTokens.includes(refreshToken)) {
+    res.status(403).json({ error: 'Unauthorized access' });
+  }
+
+  //verify refresh token
+  jwt.verify(refreshToken, `${process.env.REFRESH_TOKEN_SECRET}`, (err, user) => {
+    if (err) {
+      res.status(403).json({ error: 'Unauthorized access' });
+    } else {
+      accessToken = generateAccessToken(user);
+    }
+  });
+
+  res.status(200).json({ accessToken: accessToken });
+});
 
 //Routes
 app.get('/', (req, res) => {
@@ -149,23 +193,27 @@ app.post('/login', async(req,res) => {
       res.status(401).json({ error: `Password didn't match` });
       return;
     }
-
+    
     //generate and send JWT token
-    jwt.sign({ user_id: user._id }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1hr'}, (err,token) => {
-      if (err) {
-        console.log(`${err}: error generating JWT`);
-      }
-      res.status(200).send(token);
-    });
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    
+    res.status(200).json({ accessToken: accessToken, refreshToken: refreshToken});
   } catch(err) {
     console.log(`${err}: error logging in`);
     res.status(500).json({ error: 'An error occured while logging in' })
   }
 })
 
+//Delete refresh tokens and logout user
+//this filters out the refresh token in the request body from the refreshTokens array
+app.post('/logout', async (req,res) => {
+  refreshTokens = refreshTokens.filter(token => token !== req.body.token);
+  res.status(204).json('Refresh token deleted successfully');
+})
+
 //Log Morning Walk 
 app.post('/log/morning', authenticateUserToken, async (req,res) => {
- 	console.log(req);
   const { logDate, startTime, duration } = req.body;
   const user_id = req.authorizedData.user_id;
 	try {

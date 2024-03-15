@@ -5,9 +5,9 @@ const mongoose = require ('mongoose');
 const User = require('./models/user.js');
 const MorningLog = require('./models/morningLog.js');
 const AfternoonLog = require('./models/afternoonLog.js');
+const RefreshToken = require('./models/RefreshToken.js');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-
 
 const app = express();
 
@@ -49,7 +49,7 @@ const generateAccessToken = function (user) {
 }
 
 const generateRefreshToken = function (user) {
-  const refreshToken = jwt.sign({ user_id: user._id }, `${process.env.REFRESH_TOKEN_SECRET}`);
+  const refreshToken = jwt.sign({ user_id: user._id }, `${process.env.REFRESH_TOKEN_SECRET}`, { expiresIn: '1s'});
   return refreshToken;
 }
 
@@ -67,7 +67,9 @@ const authenticateUserToken = (req,res,next) => {
 
   //validate token with server
   const verifiedToken = jwt.verify(token, `${process.env.ACCESS_TOKEN_SECRET}`, (err, authorizedData) => {
-    if (err) {
+    if (err && err.name == 'TokenExpiredError') {
+      res.status(403).json({ error: 'Access token expired' });
+    } else if (err) {
       console.log('error connecting to protected route. unauthorized access');
       res.status(403).json({ error:'unauthorized access' });
     } else {
@@ -77,36 +79,46 @@ const authenticateUserToken = (req,res,next) => {
   });
 }
 
-//temporarily using array to store refresh tokens
-const refreshTokens = [];
-
-//Router takes in refresh token, checks if refresh token is stored in
-//refresh token array, then validates the refresh token before generating
-//access token
-//Router takes in refresh token and returns an access token to the user
-app.post('/token', (req, res) => {
+//Router takes in refresh token, checks if refresh token is stored in database, 
+//then validates the refresh token before generating access token
+app.post('/token/refresh', async (req, res) => {
   //take in refresh token
-  const refreshToken = req.body.token;
+  const clientRequestToken = req.body.token;
   let accessToken = '';
 
   if (!refreshToken) {
-    res.status(401).json({ error: 'No refresh token' });
+    res.status(401).json({ error: 'No refresh token in request' });
   }
   //refresh token not in stored tokens
-  if (!refreshTokens.includes(refreshToken)) {
-    res.status(403).json({ error: 'Unauthorized access' });
-  }
+  try {
+    const dbRefreshToken = await RefreshToken.find({ token: clientRequestToken });
+    const refreshToken = dbRefreshToken[0].token;
 
-  //verify refresh token
-  jwt.verify(refreshToken, `${process.env.REFRESH_TOKEN_SECRET}`, (err, user) => {
-    if (err) {
-      res.status(403).json({ error: 'Unauthorized access' });
-    } else {
-      accessToken = generateAccessToken(user);
+    if (!refreshToken) {
+      res.status(401).json({ error: 'Refresh token not in database' });
+      return;
     }
-  });
-
-  res.status(200).json({ accessToken: accessToken });
+    //verify refresh token
+    const verifiedRefreshTokenData = jwt.verify(refreshToken, `${process.env.REFRESH_TOKEN_SECRET}`, (err, authorizedData) => {
+      if (err) {
+        if (err.name == 'TokenExpiredError') {
+          RefreshToken.deleteOne({ token: refreshToken })
+          .then(
+            res.status(403).json({ error: 'Refresh token has expired, login again.' })
+          );
+          return;
+        }
+      }
+    });
+    
+    if (verifiedRefreshTokenData) {
+      const user = verifiedRefreshTokenData.user_id;
+      accessToken = generateAccessToken(user);
+      res.status(200).json({ accessToken: accessToken, refreshToken: refreshToken });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Unexpected error' });
+  }
 });
 
 //Routes
@@ -197,6 +209,15 @@ app.post('/login', async(req,res) => {
     //generate and send JWT token
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+
+    //save refresh token
+    const expiresAt = Date.now() + (1000); //1 second expiry
+    const newRefreshToken = new RefreshToken({
+      token: refreshToken,
+      user: user._id,
+      expiryDate: expiresAt,
+    })
+    await newRefreshToken.save();
     
     res.status(200).json({ accessToken: accessToken, refreshToken: refreshToken});
   } catch(err) {
@@ -208,9 +229,20 @@ app.post('/login', async(req,res) => {
 //Delete refresh tokens and logout user
 //this filters out the refresh token in the request body from the refreshTokens array
 app.post('/logout', async (req,res) => {
-  refreshTokens = refreshTokens.filter(token => token !== req.body.token);
-  res.status(204).json('Refresh token deleted successfully');
-})
+  let clientRequestToken = req.body.token;
+  //check if document exists with request token
+  let dbRefreshToken = await RefreshToken.find({ token: clientRequestToken });
+  let refreshToken = dbRefreshToken[0].token;
+
+  if (!refreshToken) {
+    res.status(204);
+    return;
+  }
+  
+  //if refresh token exists in database, delete
+  RefreshToken.deleteOne({ token: refreshToken })
+    .then(res.status(204));
+});
 
 //Log Morning Walk 
 app.post('/log/morning', authenticateUserToken, async (req,res) => {

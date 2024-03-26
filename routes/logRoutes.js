@@ -29,7 +29,7 @@ const authenticateUserToken = (req,res,next) => {
   });
 }
 
-router.get('/');
+router.get('/', logController.getLog);
 router.post('/morning', authenticateUserToken, logController.postMorningLog);
 router.post('/afternoon', authenticateUserToken, logController.postAfternoonLog);
 router.get('/morning', authenticateUserToken, logController.getMorningLog);

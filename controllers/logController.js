@@ -1,19 +1,19 @@
-const MorningLog = require('../models/morningLog.js');
-const AfternoonLog = require('../models/afternoonLog.js');
+const walkLog = require('../models/walkLog.js');
 
 exports.getLog = async (req,res) => {
   res.render('log');
 }
 
 exports.postMorningLog = async (req,res) => {
-  const { logDate, startTime, duration } = req.body;
+  const { logDate, startTime, duration, logType } = req.body;
   const user_id = req.authorizedData.user_id;
   try {
-    await MorningLog.updateOne(
+    await walkLog.updateOne(
       //filter:find uid and date
       {
         'user_id': user_id,
         'logDate': `${logDate}`,
+        'logType': `${logType}`,
       },
       //update: set new values
       {
@@ -35,14 +35,15 @@ exports.postMorningLog = async (req,res) => {
 }
 
 exports.postAfternoonLog = async (req,res) => {
-  const { logDate, startTime, duration } = req.body;
+  const { logDate, startTime, duration, logType } = req.body;
   const user_id = req.authorizedData.user_id;
   try {
-    await AfternoonLog.updateOne(
+    await walkLog.updateOne(
       //filter:find uid and date
       {
         'user_id': user_id,
         'logDate': `${logDate}`,
+        'logType': `${logType}`,
       },
       //update: set new values
       {
@@ -67,9 +68,10 @@ exports.postAfternoonLog = async (req,res) => {
 exports.getMorningLog = async (req,res) => {
   try {
       const user_id = req.authorizedData.user_id;
-      const userMorningLog = await MorningLog.find({
+      const userMorningLog = await walkLog.find({
         user_id: `${user_id}`,
-        logDate: `${req.query.logDate}`
+        logDate: `${req.query.logDate}`,
+        logType: `${req.query.logType}`,
       });
       res.send(userMorningLog);
    } catch (err) {
@@ -80,9 +82,10 @@ exports.getMorningLog = async (req,res) => {
 exports.getAfternoonLog = async (req,res) => {
   try {
     const user_id = req.authorizedData.user_id;
-    const userAfternoonLog = await AfternoonLog.find({
+    const userAfternoonLog = await walkLog.find({
       user_id: user_id,
-      logDate: `${req.query.logDate}`
+      logDate: `${req.query.logDate}`,
+      logType: `${req.query.logType}`,
     });
     res.send(userAfternoonLog);
   } catch (err) {

@@ -53,6 +53,7 @@ exports.postAfternoonLog = async (req,res) => {
         $set: {
           'startTime': `${startTime}`,
           'duration': Number(duration),
+          'logMonth': Number(),
         }
       },
       //option: upsert:true will create document if doesn't exist
@@ -89,6 +90,39 @@ exports.getAfternoonLog = async (req,res) => {
     });
     res.send(userAfternoonLog);
   } catch (err) {
+    res.redirect('/?error=true');
+  }
+}
+
+exports.getMonthLogs = async (req,res) => {
+  try {
+    const user_id = req.authorizedData.user_id;
+    //set current month in user location 
+    //update regex expression when current month changes 
+    const currMonth = 3;
+    
+    //filter all documents in given month, organize these documents by increasing date 
+    //using sample month of march in regex 
+    const monthLogs = await walkLog.aggregate([
+      {
+        $match:
+          {
+            user_id: `${user_id}`,
+            logDate: { $regex: /(^3\/)/m },
+          },
+      },
+      {
+        $sort: 
+          //if there are two logs on the same date, it won't be returned in sorted order
+          //have to include another field for sorting further
+          {
+            logDate: 1,
+          },
+      },
+    ]);
+    res.send(monthLogs);
+  } catch (err) {
+    console.log(err);
     res.redirect('/?error=true');
   }
 }

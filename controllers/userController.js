@@ -1,5 +1,8 @@
 const User = require('../models/user.js');
+const WalkLog = require('../models/walkLog.js');
+const RefreshToken = require('../models/refreshToken.js');
 const bcrypt = require('bcrypt');
+
 
 exports.getUsers = async (req,res) => {
   const users = await User.find({});
@@ -34,11 +37,11 @@ exports.createUser = async (req,res) => {
 }
 
 exports.updateUser = async (req,res) => {
-  const { id } = req.params;
+  const user_id = req.authorizedData.user_id;
   const { email, password } = req.body;
 
   try {
-    await User.findByIdAndUpdate( id, { email, password });
+    await User.findByIdAndUpdate( user_id, { email, password });
     res.redirect('/user');
   } catch(err) {
     res.redirect('/user?error=true');
@@ -46,9 +49,14 @@ exports.updateUser = async (req,res) => {
 }
 
 exports.deleteUser = async (req,res) => {
-  const { id } = req.params;
+  const user_id = req.authorizedData.user_id;
+  // const { email } = req.body;
+  
   try {
-    await User.findByIdAndDelete(id);
+    await User.findByIdAndDelete(user_id);
+    await WalkLog.deleteMany({ user_id: `${user_id}` });
+    await RefreshToken.deleteMany({ user_id: `${user_id}` });
+
     res.status(200).json({ message: 'item deleted successfully' });
   } catch(err) {
     res.redirect('/user?error=true');

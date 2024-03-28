@@ -1,5 +1,5 @@
 const User = require('../models/user.js');
-const RefreshToken = require('../models/RefreshToken.js');
+const RefreshToken = require('../models/refreshToken.js');
 const jwt = require('jsonwebtoken');
 
 //Authentication Middleware Functions
@@ -39,7 +39,7 @@ exports.loginUser = async (req,res) => {
     const expiresAt = Date.now() + (1000); //1 second expiry
     const newRefreshToken = new RefreshToken({
       token: refreshToken,
-      user: user._id,
+      user_id: user._id,
       expiryDate: expiresAt,
     })
     await newRefreshToken.save();
